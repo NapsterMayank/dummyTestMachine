@@ -336,6 +336,135 @@
       color: var(--muted);
       font-size: 14px;
     }
+
+    /* ── Mode toggle ── */
+    .mode-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+    .mode-toggle-btn {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-toggle-btn.active { background: var(--accent); color: #fff; }
+
+    /* ── 5-sec issue grid ── */
+    .issue-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .issue-btn {
+      padding: 20px 10px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .issue-btn:active, .issue-btn.selected {
+      border-color: var(--accent);
+      background: rgba(79,142,247,0.12);
+      color: var(--accent);
+    }
+
+    /* ── Part chips ── */
+    .chips-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .part-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      min-height: 40px;
+    }
+    .part-chip {
+      padding: 8px 16px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .part-chip:active, .part-chip.selected {
+      border-color: var(--accent2);
+      background: rgba(110,231,183,0.1);
+      color: var(--accent2);
+    }
+    .no-history-hint { font-size: 13px; color: var(--muted); padding: 6px 0; }
+
+    /* ── Qty stepper ── */
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .stepper-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .stepper-btn {
+      width: 38px; height: 38px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--text);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s;
+    }
+    .stepper-btn:active { border-color: var(--accent); }
+    .stepper-val { font-size: 18px; font-weight: 700; color: var(--accent); min-width: 28px; text-align: center; }
+
+    /* ── New part fallback ── */
+    .new-part-section { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+    .new-part-row { display: flex; gap: 8px; }
+    .new-part-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+    }
+    .new-part-row input:focus { border-color: var(--accent); }
+    .btn-add-new {
+      padding: 12px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -345,10 +474,13 @@
        SCENE: Machine List (Home)
   ════════════════════════════════════ -->
   <div class="scene active" id="sceneHome">
+    <div class="mode-toggle-row">
+      <button class="mode-toggle-btn" id="modeToggleBtn" onclick="toggleMode()">⚡ 5-SEC MODE</button>
+    </div>
     <div class="scene-header">
       <div class="step-badge">Machines</div>
       <h1 class="scene-title">Select Machine</h1>
-      <p class="scene-sub">Tap to log a repair</p>
+      <p class="scene-sub" id="homeSub">Tap to log a repair</p>
     </div>
 
     <div class="machine-list" id="machineList">
@@ -414,27 +546,67 @@
       </div>
     </div>
 
-    <div class="fields" style="margin-top: 20px; flex: 1;">
-      <div class="field-group">
-        <div class="field-label">What broke?</div>
-        <div class="field-row">
-          <input type="text" id="issueTitle" placeholder="e.g. Not starting" />
-          <button class="mic-btn" id="micIssue">🎤</button>
+    <!-- Standard UI -->
+    <div id="logStandard" style="flex:1; display:flex; flex-direction:column;">
+      <div class="fields" style="margin-top: 20px; flex: 1;">
+        <div class="field-group">
+          <div class="field-label">What broke?</div>
+          <div class="field-row">
+            <input type="text" id="issueTitle" placeholder="e.g. Not starting" />
+            <button class="mic-btn" id="micIssue">🎤</button>
+          </div>
+          <div class="speech-hint" id="speechHintIssue"></div>
         </div>
-        <div class="speech-hint" id="speechHintIssue"></div>
-      </div>
 
-      <div class="field-group">
-        <div class="field-label">Part replaced</div>
-        <div class="field-row">
-          <input type="text" id="partName" placeholder="e.g. Starter Motor" />
-          <button class="mic-btn" id="micPart">🎤</button>
+        <div class="field-group">
+          <div class="field-label">Part replaced</div>
+          <div class="field-row">
+            <input type="text" id="partName" placeholder="e.g. Starter Motor" />
+            <button class="mic-btn" id="micPart">🎤</button>
+          </div>
+          <div class="speech-hint" id="speechHintPart"></div>
         </div>
-        <div class="speech-hint" id="speechHintPart"></div>
       </div>
+      <button class="btn-primary" id="btnLog">Log Repair ✓</button>
     </div>
 
-    <button class="btn-primary" id="btnLog">Log Repair ✓</button>
+    <!-- Fast UI (5-sec mode) -->
+    <div id="logFast" style="display:none; flex:1; flex-direction:column; overflow-y:auto; padding-top:8px;">
+      <div class="field-label" style="margin-bottom:12px;">What broke?</div>
+      <div class="issue-grid">
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'Won\'t Start')">Won't Start</button>
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'Overheating')">Overheating</button>
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'Leaking')">Leaking</button>
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'Noise / Vibration')">Noise / Vibration</button>
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'No Power')">No Power</button>
+        <button class="issue-btn" onclick="fastSelectIssue(this, 'Physical Damage')">Physical Damage</button>
+      </div>
+
+      <div class="chips-label">Part replaced</div>
+      <div id="commonPartGrid" class="issue-grid" style="margin-bottom:12px;"></div>
+
+      <div id="historySection" style="display:none;">
+        <div class="chips-label" style="margin-bottom:8px;">Previously used</div>
+        <div id="partChips" class="part-chips"></div>
+      </div>
+
+      <div class="stepper-row">
+        <span class="stepper-label">Qty</span>
+        <button class="stepper-btn" id="qtyMinus">−</button>
+        <span class="stepper-val" id="qtyVal">1</span>
+        <button class="stepper-btn" id="qtyPlus">+</button>
+      </div>
+
+      <div class="new-part-section">
+        <div class="chips-label" style="margin-bottom:8px;">Other (type once, saved for next time)</div>
+        <div class="new-part-row">
+          <input type="text" id="fastPartInput" placeholder="Part name..." />
+          <button class="btn-add-new" id="btnAddNewPart">Add</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btnFastLog" style="margin-top:16px;" disabled>Log Repair ✓</button>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════
@@ -542,6 +714,7 @@
     document.getElementById('speechHintIssue').textContent = '';
     document.getElementById('speechHintPart').textContent  = '';
     goTo('sceneLog');
+    applyModeToLogScene();
   }
 
   // ── Back buttons ──
@@ -702,6 +875,158 @@
   document.getElementById('btnAnother').addEventListener('click', () => {
     loadMachines();
     goTo('sceneHome');
+  });
+
+  // ── Mode toggle ──
+  let fastMode = false;
+  let fastQty = 1;
+  let fastIssue = null;
+  let fastPart = null;
+
+  function toggleMode() {
+    fastMode = !fastMode;
+    const btn = document.getElementById('modeToggleBtn');
+    btn.textContent = fastMode ? '✕ Standard Mode' : '⚡ 5-SEC MODE';
+    btn.classList.toggle('active', fastMode);
+    document.getElementById('homeSub').textContent = fastMode
+      ? 'Tap to log — no typing needed'
+      : 'Tap to log a repair';
+  }
+
+  function applyModeToLogScene() {
+    document.getElementById('logStandard').style.display = fastMode ? 'none' : 'flex';
+    document.getElementById('logFast').style.display     = fastMode ? 'flex' : 'none';
+    if (fastMode) {
+      fastIssue = null; fastPart = null; fastQty = 1;
+      document.getElementById('qtyVal').textContent = 1;
+      document.querySelectorAll('.issue-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('btnFastLog').disabled = true;
+      renderPartChips();
+    }
+  }
+
+  // ── Common parts by machine type ──
+  function getCommonParts(machineName) {
+    const n = (machineName || '').toLowerCase();
+    if (n.includes('generator') || n.includes('genset') || n.includes('dg'))
+      return ['Air Filter', 'Oil Filter', 'Belt', 'Battery', 'Fuel Filter', 'Starter Motor'];
+    if (n.includes('compressor'))
+      return ['Air Filter', 'Belt', 'Valve', 'O-Ring', 'Pressure Switch', 'Oil'];
+    if (n.includes('pump'))
+      return ['Seal', 'Impeller', 'Bearing', 'Gasket', 'Valve', 'Filter'];
+    if (n.includes('lift') || n.includes('hoist') || n.includes('crane'))
+      return ['Wire Rope', 'Hook', 'Brake Pad', 'Oil', 'Limit Switch', 'Bearing'];
+    if (n.includes('ac') || n.includes('hvac') || n.includes('chiller') || n.includes('cooling'))
+      return ['Filter', 'Capacitor', 'Contactor', 'Belt', 'Thermostat', 'Gas Valve'];
+    if (n.includes('motor') || n.includes('engine'))
+      return ['Belt', 'Bearing', 'Capacitor', 'Fuse', 'Oil Filter', 'Spark Plug'];
+    // generic fallback
+    return ['Filter', 'Belt', 'Bearing', 'Fuse', 'Gasket', 'Seal'];
+  }
+
+  function renderCommonParts() {
+    const parts = getCommonParts(currentMachineName);
+    const el = document.getElementById('commonPartGrid');
+    el.innerHTML = parts.map(p =>
+      `<button class="issue-btn" onclick="selectPart(this,'${p.replace(/'/g,"\\'")}')">${p}</button>`
+    ).join('');
+  }
+
+  function selectPart(btn, name) {
+    document.querySelectorAll('#commonPartGrid .issue-btn, .part-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    fastPart = name;
+    updateFastBtn();
+  }
+
+  // ── Parts history ──
+  function getHistory() { return JSON.parse(localStorage.getItem('mlog_parts') || '[]'); }
+  function saveHistory(name) {
+    const h = getHistory().filter(p => p.toLowerCase() !== name.toLowerCase());
+    h.unshift(name);
+    localStorage.setItem('mlog_parts', JSON.stringify(h.slice(0, 20)));
+  }
+
+  function renderPartChips() {
+    renderCommonParts();
+    const h = getHistory();
+    const histSection = document.getElementById('historySection');
+    const el = document.getElementById('partChips');
+    fastPart = null;
+    document.getElementById('btnFastLog').disabled = true;
+    if (!h.length) {
+      histSection.style.display = 'none';
+      return;
+    }
+    histSection.style.display = 'block';
+    el.innerHTML = h.map(p =>
+      `<button class="part-chip" onclick="selectChip(this,'${p.replace(/'/g,"\\'")}')">${p}</button>`
+    ).join('');
+  }
+
+  function selectChip(btn, name) {
+    document.querySelectorAll('#commonPartGrid .issue-btn, .part-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    fastPart = name;
+    updateFastBtn();
+  }
+
+  function fastSelectIssue(btn, title) {
+    document.querySelectorAll('.issue-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    fastIssue = title;
+    updateFastBtn();
+  }
+
+  function updateFastBtn() {
+    document.getElementById('btnFastLog').disabled = !(fastIssue && fastPart);
+  }
+
+  // Qty stepper
+  document.getElementById('qtyMinus').addEventListener('click', () => {
+    if (fastQty > 1) { fastQty--; document.getElementById('qtyVal').textContent = fastQty; }
+  });
+  document.getElementById('qtyPlus').addEventListener('click', () => {
+    fastQty++; document.getElementById('qtyVal').textContent = fastQty;
+  });
+
+  // Add new part
+  document.getElementById('btnAddNewPart').addEventListener('click', () => {
+    const name = document.getElementById('fastPartInput').value.trim();
+    if (!name) return;
+    saveHistory(name);
+    document.getElementById('fastPartInput').value = '';
+    renderPartChips();
+    // auto-select the newly added chip
+    const chips = document.querySelectorAll('.part-chip');
+    if (chips.length) { selectChip(chips[0], name); }
+  });
+  document.getElementById('fastPartInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnAddNewPart').click();
+  });
+
+  // Fast log submit
+  document.getElementById('btnFastLog').addEventListener('click', async () => {
+    if (!fastIssue || !fastPart) return;
+    const btn = document.getElementById('btnFastLog');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const res  = await fetch(`/machines/${currentMachineId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_title: fastIssue, part_name: fastPart, quantity: fastQty })
+      });
+      const data = await res.json();
+      saveHistory(fastPart);
+      document.getElementById('doneMachine').textContent = data.machine.name;
+      document.getElementById('doneIssue').textContent   = data.issue.title;
+      document.getElementById('donePart').textContent    = `${data.part.part_name} × ${fastQty}`;
+      goTo('sceneDone');
+    } catch (e) {
+      alert('Could not save. Is the server running?');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Log Repair ✓';
+    }
   });
 
   // ── Init ──
